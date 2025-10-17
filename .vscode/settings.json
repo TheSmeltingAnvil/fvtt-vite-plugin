@@ -1,0 +1,8 @@
+{
+  "cSpell.ignoreWords": ["foundryvtt", "fvtt", "esmodules"],
+
+  "vitest.configSearchPatternInclud": [
+    "**/vitest.config.{js,cjs,mjs,ts,cts,mts}",
+    "**/vite.config.{js,cjs,mjs,ts,cts,mts}"
+  ]
+}
