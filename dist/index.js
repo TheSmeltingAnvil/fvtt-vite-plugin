@@ -633,7 +633,7 @@ async function resolveOptions(options) {
   resolvedOptions.styleFileNames = (name) => {
     return `${name}.css`;
   };
-  const esmodules = resolvedOptions.manifest.esmodules.reduce(
+  const esmodules = resolvedOptions.manifest.esmodules?.reduce(
     (acc, originalFileName) => {
       const { dir, name } = import_path12.default.posix.parse(originalFileName);
       const name2 = import_path12.default.posix.join(dir, name);
@@ -642,7 +642,7 @@ async function resolveOptions(options) {
     },
     {}
   );
-  const scripts = resolvedOptions.manifest.scripts.reduce(
+  const scripts = resolvedOptions.manifest.scripts?.reduce(
     (acc, originalFileName) => {
       const { dir, name } = import_path12.default.posix.parse(originalFileName);
       const name2 = import_path12.default.posix.join(dir, name);
@@ -651,7 +651,7 @@ async function resolveOptions(options) {
     },
     {}
   );
-  const styles = resolvedOptions.manifest.styles.reduce(
+  const styles = resolvedOptions.manifest.styles?.reduce(
     (acc, originalFileName) => {
       const { dir, name } = import_path12.default.posix.parse(originalFileName);
       const name2 = import_path12.default.posix.join(dir, name);

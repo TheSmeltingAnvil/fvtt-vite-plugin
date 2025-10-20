@@ -22,6 +22,7 @@ export default function entryScripts(resolvedOptions: ResolvedFoundryvttOptions)
         const output = path.resolve(outDir, outputFileName)
         const relativeFileName = path.posix.relative(dir, originalFileName)
         if (dir) await fs.ensureDir(dir)
+        console.log(`[DEBUG] Creating dev server entry script: ${output}`)
         if (ext === ".css") {
           await fs.writeFile(output, `/* ${message} */\n`)
         } else {

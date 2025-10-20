@@ -54,7 +54,7 @@ export async function resolveOptions(options: FoundryvttOptions): Promise<Resolv
   }
 
   // Create mapping from original file names to output file names
-  const esmodules = resolvedOptions.manifest.esmodules.reduce(
+  const esmodules = (resolvedOptions.manifest.esmodules ?? []).reduce(
     (acc, originalFileName) => {
       const { dir, name } = path.posix.parse(originalFileName)
       const name2 = path.posix.join(dir, name)
@@ -63,7 +63,7 @@ export async function resolveOptions(options: FoundryvttOptions): Promise<Resolv
     },
     {} as Record<string, string>,
   )
-  const scripts = resolvedOptions.manifest.scripts.reduce(
+  const scripts = (resolvedOptions.manifest.scripts ?? []).reduce(
     (acc, originalFileName) => {
       const { dir, name } = path.posix.parse(originalFileName)
       const name2 = path.posix.join(dir, name)
@@ -72,7 +72,7 @@ export async function resolveOptions(options: FoundryvttOptions): Promise<Resolv
     },
     {} as Record<string, string>,
   )
-  const styles = resolvedOptions.manifest.styles.reduce(
+  const styles = (resolvedOptions.manifest.styles ?? []).reduce(
     (acc, originalFileName) => {
       const { dir, name } = path.posix.parse(originalFileName)
       const name2 = path.posix.join(dir, name)
