@@ -41,6 +41,9 @@ export type ResolvedFoundryvttOptions = Required<Omit<FoundryvttOptions, "assets
   manifestPath: string
   manifestType: "module" | "system"
   replace: (source: string) => string
+  scriptFileNames: (name: string) => string
+  styleFileNames: (name: string) => string
+  entries: Record<string, string>
 }
 
 export interface CollectedFile {

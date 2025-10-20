@@ -33,9 +33,7 @@ __export(index_exports, {
   foundryvtt: () => foundryvtt
 });
 module.exports = __toCommonJS(index_exports);
-
-// src/assets/build.ts
-var import_path7 = __toESM(require("path"));
+var import_fs_extra7 = __toESM(require("fs-extra"));
 
 // src/_utils/collectFile.ts
 var import_js_yaml = __toESM(require("js-yaml"));
@@ -71,15 +69,15 @@ function collectFile(fileName, { srcDir, outDir }) {
 var import_fs_extra2 = __toESM(require("fs-extra"));
 var import_path2 = __toESM(require("path"));
 function walkFiles(pattern, { srcDir, exclude }) {
-  if (!Array.isArray(pattern)) pattern = [pattern];
-  if (!Array.isArray(exclude)) exclude = exclude ? [exclude] : [];
   return import_fs_extra2.default.globSync(pattern, { cwd: srcDir, exclude }).map((match) => {
-    return import_path2.default.resolve(srcDir, match.replaceAll(/\\/g, "/"));
+    const dir = srcDir?.replaceAll(/\\/g, "/") ?? "";
+    return import_path2.default.resolve(dir, match);
   });
 }
 
 // src/_utils/collectFiles.ts
 function collectFiles(pattern, { srcDir, exclude, outDir }) {
+  exclude = exclude ? Array.isArray(exclude) ? exclude : [exclude] : [];
   return walkFiles(pattern, { srcDir, exclude }).map((f) => collectFile(f, { srcDir, outDir }));
 }
 
@@ -95,35 +93,41 @@ async function copyFiles(collectedFiles, replace) {
 }
 
 // src/_utils/findManifest.ts
-var import_path4 = __toESM(require("path"));
 function findManifest(cwd) {
-  const candidates = ["system.json", "system.yml", "system.yaml", "module.json", "module.yml", "module.yaml"];
+  const candidates = [
+    "**/system.json",
+    "**/system.yml",
+    "**/system.yaml",
+    "**/module.json",
+    "**/module.yml",
+    "**/module.yaml"
+  ];
   const found = walkFiles(candidates, { srcDir: cwd });
   if (found.length === 0) throw new Error("Could not find (system|module).(json|yaml|yml) manifest file.");
-  return import_path4.default.posix.join(found[0]);
+  return found[0];
 }
 
 // src/_utils/loadFile.ts
 var YAML2 = __toESM(require("js-yaml"));
-var import_path5 = __toESM(require("path"));
+var import_path4 = __toESM(require("path"));
 async function loadFile(filePath) {
-  const { ext } = import_path5.default.posix.parse(filePath);
+  const { ext } = import_path4.default.posix.parse(filePath);
   const data = ext === ".json" ? await JSON.parse(await readFile(filePath)) : YAML2.load(await readFile(filePath));
   return data;
 }
 
 // src/_utils/readFileAsJson.ts
 var YAML3 = __toESM(require("js-yaml"));
-var import_path6 = __toESM(require("path"));
+var import_path5 = __toESM(require("path"));
 async function readFileAsJson(filePath) {
-  const { ext } = import_path6.default.posix.parse(filePath);
+  const { ext } = import_path5.default.posix.parse(filePath);
   const data = ext === ".json" ? JSON.parse(await readFile(filePath)) : YAML3.load(await readFile(filePath));
   return JSON.stringify(data, null, 2);
 }
 
 // src/assets/build.ts
-function build(options) {
-  const resolvedOptions = options;
+var import_path6 = __toESM(require("path"));
+function build(resolvedOptions) {
   let resolvedConfig;
   let srcDir;
   let outDir;
@@ -133,7 +137,7 @@ function build(options) {
     configResolved(config2) {
       resolvedConfig = config2;
       srcDir = resolvedConfig.root;
-      outDir = import_path7.default.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
+      outDir = import_path6.default.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
     },
     async buildStart() {
       const { replace } = resolvedOptions;
@@ -165,14 +169,14 @@ function build(options) {
 // src/assets/serve.ts
 var import_fs_extra4 = __toESM(require("fs-extra"));
 var import_minimatch = require("minimatch");
-var import_path8 = __toESM(require("path"));
+var import_path7 = __toESM(require("path"));
 var import_picocolors2 = __toESM(require("picocolors"));
 
 // src/assets/_utils.ts
 var crypto = __toESM(require("crypto"));
 var fs4 = __toESM(require("fs"));
 var import_mrmime = require("mrmime");
-var path8 = __toESM(require("path"));
+var path7 = __toESM(require("path"));
 var import_picocolors = __toESM(require("picocolors"));
 function serveFiles(config2, collectedFiles, replaceVariables) {
   config2.logger.info(import_picocolors.default.dim("Initializing assets middleware"), {
@@ -186,11 +190,10 @@ function serveFiles(config2, collectedFiles, replaceVariables) {
       const file = readLocalFileIfExists(collectedFiles, requestPath);
       if (!file || file.stats.isDirectory()) return return404(res, next);
       setHeaders(res, file.originalFileName, server.headers);
-      if (path8.extname(file.originalFileName) === ".yaml" || path8.extname(file.originalFileName) === ".yml") {
+      if (path7.extname(file.originalFileName) === ".yaml" || path7.extname(file.originalFileName) === ".yml") {
         const source = replaceVariables(await readFileAsJson(file.originalFileName));
         return sendTransform(req, res, source);
       }
-      console.log("Serving Static File: ", file);
       sendStatic(req, res, file.originalFileName, file.stats);
     } catch (err) {
       if (err instanceof Error) return next(err);
@@ -295,8 +298,7 @@ function calculateMd5Base64(content) {
 }
 
 // src/assets/serve.ts
-function serve(options) {
-  const resolvedOptions = options;
+function serve(resolvedOptions) {
   let resolvedConfig;
   let srcDir;
   let outDir;
@@ -310,7 +312,7 @@ function serve(options) {
     configResolved(config2) {
       resolvedConfig = config2;
       srcDir = resolvedConfig.root;
-      outDir = import_path8.default.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
+      outDir = import_path7.default.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
       logger = config2.logger;
     },
     configureServer: async (server) => {
@@ -342,8 +344,8 @@ function serve(options) {
       };
     },
     async watchChange(id, { event }) {
-      const log = (msg, path15) => {
-        logger.info(import_picocolors2.default.green(msg + ": ") + import_picocolors2.default.dim(path15), {
+      const log = (msg, path14) => {
+        logger.info(import_picocolors2.default.green(msg + ": ") + import_picocolors2.default.dim(path14), {
           timestamp: true
         });
       };
@@ -358,7 +360,7 @@ function serve(options) {
         });
       };
       const { replace } = resolvedOptions;
-      const originalFileName = import_path8.default.normalize(id);
+      const originalFileName = import_path7.default.normalize(id);
       const assets2 = getAssets(originalFileName);
       if (!assets2 || !assets2.assetType || !assets2.copyToOutDir || !assets2.reload) {
         return;
@@ -413,16 +415,17 @@ function serve(options) {
 }
 
 // src/assets/index.ts
-function assets(options) {
-  return [build(options), serve(options)];
+function assets(resolvedOptions) {
+  return [build(resolvedOptions), serve(resolvedOptions)];
 }
 
 // src/config/index.ts
-var import_path9 = __toESM(require("path"));
+var import_path8 = __toESM(require("path"));
 function config(resolvedOptions) {
   return {
     name: "foundryvtt:config",
     config(config2, _env) {
+      config2.root ??= import_path8.default.dirname(resolvedOptions.manifestPath);
       config2.publicDir ??= "../public";
       config2.build ??= {};
       config2.build.rolldownOptions ??= {};
@@ -430,22 +433,24 @@ function config(resolvedOptions) {
         if (typeof config2.build.rolldownOptions.input === "string") {
           const original = config2.build.rolldownOptions.input;
           config2.build.rolldownOptions.input = {};
-          const { name } = import_path9.default.posix.parse(original);
+          const { name } = import_path8.default.posix.parse(original);
           config2.build.rolldownOptions.input[name] = original;
         } else if (Array.isArray(config2.build.rolldownOptions.input)) {
           const original = config2.build.rolldownOptions.input;
           config2.build.rolldownOptions.input = {};
           for (const item of original) {
-            const { name } = import_path9.default.posix.parse(item);
+            const { name } = import_path8.default.posix.parse(item);
             config2.build.rolldownOptions.input[name] = item;
           }
         }
       }
-      const input = [...resolvedOptions.manifest.esmodules, ...resolvedOptions.manifest.scripts].reduce(
-        (acc, file) => {
-          const { dir, name } = import_path9.default.posix.parse(file);
-          const key = import_path9.default.posix.join(dir, name);
-          acc[key] = key;
+      const input = Object.entries(resolvedOptions.entries).reduce(
+        (acc, [originalFileName, fileName]) => {
+          const { dir, name: baseName, ext } = import_path8.default.posix.parse(fileName);
+          if (ext !== ".css") {
+            const name = import_path8.default.posix.join(dir, baseName);
+            acc[name] = originalFileName;
+          }
           return acc;
         },
         {}
@@ -454,25 +459,34 @@ function config(resolvedOptions) {
         ...config2.build.rolldownOptions.input,
         ...input
       };
-      if (config2.build.rolldownOptions.output && !Array.isArray(config2.build.rolldownOptions.output)) {
+      for (const key of Object.keys(resolvedOptions.entries)) {
+        const kv = Object.entries(config2.build.rolldownOptions.input).find(([_, value]) => value === key);
+        if (kv) {
+          resolvedOptions.entries[key] = kv[0] + import_path8.default.extname(resolvedOptions.entries[key]);
+        }
+      }
+      config2.build.rolldownOptions.output ??= [];
+      if (!Array.isArray(config2.build.rolldownOptions.output)) {
         const original = config2.build.rolldownOptions.output;
         config2.build.rolldownOptions.output = [];
         config2.build.rolldownOptions.output.push(original);
-      } else {
-        config2.build.rolldownOptions.output = [];
       }
       config2.build.rolldownOptions.output.push({
         format: "esm",
         preserveModules: true,
         assetFileNames: (chunkInfo) => {
           if (chunkInfo.name) {
-            const { dir } = import_path9.default.posix.parse(chunkInfo.originalFileName ?? chunkInfo.name);
-            return import_path9.default.posix.join(dir, "[name][extname]");
+            const { dir } = import_path8.default.posix.parse(chunkInfo.originalFileName ?? chunkInfo.name);
+            return import_path8.default.posix.join(dir, "[name][extname]");
           }
           return "[name][extname]";
         },
-        entryFileNames: "[name].mjs",
-        cssEntryFileNames: "[name].css"
+        entryFileNames: (chunkInfo) => {
+          return resolvedOptions.scriptFileNames(chunkInfo.name);
+        },
+        cssEntryFileNames: (chunkInfo) => {
+          return resolvedOptions.styleFileNames(chunkInfo.name);
+        }
       });
       const prefixUrl = `/${resolvedOptions.manifestType}s/${resolvedOptions.manifest.id}/`;
       config2.base = prefixUrl;
@@ -490,8 +504,8 @@ function config(resolvedOptions) {
 
 // src/entryScripts/index.ts
 var import_fs_extra5 = __toESM(require("fs-extra"));
-var import_path10 = __toESM(require("path"));
-function entryScripts(_resolvedOptions) {
+var import_path9 = __toESM(require("path"));
+function entryScripts(resolvedOptions) {
   let resolvedConfig;
   let outDir;
   return {
@@ -499,31 +513,89 @@ function entryScripts(_resolvedOptions) {
     apply: "serve",
     configResolved(_config) {
       resolvedConfig = _config;
-      outDir = import_path10.default.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
+      outDir = import_path9.default.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
     },
     buildStart: async () => {
       const message = "This file is for a running vite dev server and is not copied to a build";
-      await import_fs_extra5.default.ensureDir(outDir);
-      await import_fs_extra5.default.writeFile(import_path10.default.resolve(outDir, "index.mjs"), `/* ${message} */
-import './index.ts';
+      for (const [originalFileName, outputFileName] of Object.entries(resolvedOptions.entries)) {
+        const { dir, ext } = import_path9.default.posix.parse(outputFileName);
+        const output = import_path9.default.resolve(outDir, outputFileName);
+        const relativeFileName = import_path9.default.posix.relative(dir, originalFileName);
+        if (dir) await import_fs_extra5.default.ensureDir(dir);
+        if (ext === ".css") {
+          await import_fs_extra5.default.writeFile(output, `/* ${message} */
 `);
-      await import_fs_extra5.default.writeFile(import_path10.default.resolve(outDir, "styles.css"), `/* ${message} */
+        } else {
+          await import_fs_extra5.default.writeFile(output, `/* ${message} */
+import './${relativeFileName}';
 `);
+        }
+      }
     },
     buildEnd: async () => {
-      await import_fs_extra5.default.remove(import_path10.default.resolve(outDir, "index.mjs"));
+      await import_fs_extra5.default.remove(import_path9.default.resolve(outDir, "index.mjs"));
     }
   };
 }
 
 // src/manifest/build.ts
-var import_path12 = __toESM(require("path"));
+var import_path10 = __toESM(require("path"));
 var import_picocolors3 = __toESM(require("picocolors"));
+function build2(resolvedOptions) {
+  return {
+    name: "foundryvtt:manifest:build",
+    apply: "build",
+    configResolved(resolvedConfig) {
+      resolvedConfig.logger.info(import_picocolors3.default.white("Using manifest: ") + import_picocolors3.default.green(resolvedOptions.manifestPath));
+    },
+    generateBundle() {
+      const manifestSource = JSON.stringify(resolvedOptions.manifest, null, 2);
+      const { name } = import_path10.default.parse(resolvedOptions.manifestPath);
+      this.emitFile({
+        type: "asset",
+        name,
+        fileName: `${name}.json`,
+        originalFileName: resolvedOptions.manifestPath,
+        source: manifestSource
+      });
+    }
+  };
+}
+
+// src/manifest/serve.ts
+var import_fs_extra6 = __toESM(require("fs-extra"));
+var import_path11 = __toESM(require("path"));
+var import_picocolors4 = __toESM(require("picocolors"));
+function serve2(resolvedOptions) {
+  let outDir;
+  return {
+    name: "foundryvtt:manifest:serve",
+    apply: "serve",
+    configResolved(resolvedConfig) {
+      const srcDir = resolvedConfig.root;
+      outDir = import_path11.default.resolve(srcDir, resolvedConfig.build.outDir);
+      resolvedConfig.logger.info(import_picocolors4.default.white("Using manifest: ") + import_picocolors4.default.green(resolvedOptions.manifestPath));
+    },
+    configureServer: async () => {
+      const manifestSource = JSON.stringify(resolvedOptions.manifest, null, 2);
+      const { name } = import_path11.default.parse(resolvedOptions.manifestPath);
+      await import_fs_extra6.default.ensureDir(outDir);
+      await import_fs_extra6.default.writeFile(import_path11.default.resolve(outDir, `${name}.json`), manifestSource);
+    }
+  };
+}
+
+// src/manifest/index.ts
+function manifest(resolvedOptions) {
+  return [build2(resolvedOptions), serve2(resolvedOptions)];
+}
 
 // src/manifest/_utils.ts
-var import_path11 = __toESM(require("path"));
-async function resolveOptions(options, root) {
-  const resolvedOptions = options;
+var import_path12 = __toESM(require("path"));
+async function resolveOptions(options) {
+  const resolvedOptions = { ...options };
+  resolvedOptions.manifestType = resolvedOptions.manifestPath.indexOf("/module.") >= 0 ? "module" : "system";
+  resolvedOptions.manifest = await loadFile(resolvedOptions.manifestPath);
   resolvedOptions.assets = (() => {
     switch (typeof options.assets) {
       case "undefined":
@@ -543,9 +615,6 @@ async function resolveOptions(options, root) {
     }
   })();
   resolvedOptions.assets = [...resolvedOptions.assets, ...defaultAssetsOptions];
-  resolvedOptions.manifestPath = options.manifestPath ?? findManifest(root);
-  resolvedOptions.manifestType = resolvedOptions.manifestPath.indexOf("module.") >= 0 ? "module" : "system";
-  resolvedOptions.manifest = await loadFile(resolvedOptions.manifestPath);
   options.variables = options.variables || {};
   options.variables["ID"] = resolvedOptions.manifest.id;
   options.variables["VERSION"] = resolvedOptions.manifest.version;
@@ -558,71 +627,41 @@ async function resolveOptions(options, root) {
     }
     return source;
   };
-  return true;
-}
-function resolveManifest(manifest2, config2) {
-  const resolvedManifest = { ...manifest2 };
-  const scriptFileNames = createFunction(config2.build?.rolldownOptions?.output, "entryFileNames") ?? createFunction(config2.build?.rolldownOptions?.output, "chunkFileNames") ?? ((name, extname2) => `${name}${extname2}`);
-  const styleFileNames = createFunction(config2.build?.rolldownOptions?.output, "cssEntryFileNames") ?? createFunction(config2.build?.rolldownOptions?.output, "cssChunkFileNames") ?? createFunction(config2.build?.rolldownOptions?.output, "chunkFileNames") ?? ((name, extname2) => `${name}${extname2}`);
-  resolvedManifest.esmodules = manifest2.esmodules.map((fileName) => {
-    fileName = useInputName(fileName, config2);
-    const { dir, name, ext } = import_path11.default.parse(fileName);
-    fileName = import_path11.default.posix.join(dir, scriptFileNames(name, ext));
-    if (fileName.endsWith(".ts")) {
-      return fileName.replace(/\.ts$/, ".js");
-    }
-    return fileName;
-  });
-  resolvedManifest.scripts = manifest2.scripts.map((fileName) => {
-    fileName = useInputName(fileName, config2);
-    const { dir, name, ext } = import_path11.default.parse(fileName);
-    fileName = import_path11.default.posix.join(dir, scriptFileNames(name, ext));
-    if (fileName.endsWith(".ts")) {
-      return fileName.replace(/\.ts$/, ".js");
-    }
-    return fileName;
-  });
-  resolvedManifest.styles = manifest2.styles.map((fileName) => {
-    fileName = useInputName(fileName, config2);
-    const { dir, name, ext } = import_path11.default.parse(fileName);
-    fileName = import_path11.default.posix.join(dir, styleFileNames(name, ext));
-    if (fileName.endsWith(".scss")) {
-      return fileName.replace(/\.scss$/, ".css");
-    }
-    if (fileName.endsWith(".sass")) {
-      return fileName.replace(/\.sass$/, ".css");
-    }
-    if (fileName.endsWith(".less")) {
-      return fileName.replace(/\.less$/, ".css");
-    }
-    return fileName;
-  });
-  resolvedManifest.languages = manifest2.languages.map((lang) => ({
-    ...lang,
-    path: lang.path.replace(/\.ya?ml$/, ".json")
-  }));
-  return resolvedManifest;
-}
-function useInputName(fileName, config2) {
-  if (config2.build?.rolldownOptions?.input) {
-    const input = Object.entries(config2.build.rolldownOptions.input);
-    const name = input.find(([_, value]) => value === fileName)?.[0];
-    const { ext } = import_path11.default.parse(fileName);
-    return name ? name + ext : fileName;
-  }
-  return fileName;
-}
-function createFunction(output, key) {
-  if (!output) return (name, extname2) => `${name}${extname2}`;
-  const config2 = Array.isArray(output) ? output.find((o) => key in o)?.[key] : output[key];
-  if (!config2) return void 0;
-  if (typeof config2 === "string") {
-    return (name, extname2) => config2.replace("[name]", name).replace("[extname]", extname2);
-  }
-  if (typeof config2 === "function") {
-    return (name, _extname) => config2({ name });
-  }
-  return void 0;
+  resolvedOptions.scriptFileNames = (name) => {
+    return `${name}.mjs`;
+  };
+  resolvedOptions.styleFileNames = (name) => {
+    return `${name}.css`;
+  };
+  const esmodules = resolvedOptions.manifest.esmodules.reduce(
+    (acc, originalFileName) => {
+      const { dir, name } = import_path12.default.posix.parse(originalFileName);
+      const name2 = import_path12.default.posix.join(dir, name);
+      acc[originalFileName] = resolvedOptions.scriptFileNames(name2);
+      return acc;
+    },
+    {}
+  );
+  const scripts = resolvedOptions.manifest.scripts.reduce(
+    (acc, originalFileName) => {
+      const { dir, name } = import_path12.default.posix.parse(originalFileName);
+      const name2 = import_path12.default.posix.join(dir, name);
+      acc[originalFileName] = resolvedOptions.scriptFileNames(name2);
+      return acc;
+    },
+    {}
+  );
+  const styles = resolvedOptions.manifest.styles.reduce(
+    (acc, originalFileName) => {
+      const { dir, name } = import_path12.default.posix.parse(originalFileName);
+      const name2 = import_path12.default.posix.join(dir, name);
+      acc[originalFileName] = resolvedOptions.styleFileNames(name2);
+      return acc;
+    },
+    {}
+  );
+  resolvedOptions.entries = { ...esmodules, ...scripts, ...styles };
+  return resolvedOptions;
 }
 var defaultAssetsOptions = [
   {
@@ -645,76 +684,12 @@ var defaultAssetsOptions = [
   }
 ];
 
-// src/manifest/build.ts
-function build2(options) {
-  const resolvedOptions = options;
-  return {
-    name: "foundryvtt:manifest:build",
-    apply: "build",
-    async config(config2, _env) {
-      await resolveOptions(options, config2.root || process.cwd());
-      resolvedOptions.manifest = resolveManifest(resolvedOptions.manifest, config2);
-    },
-    configResolved(config2) {
-      config2.logger.info(import_picocolors3.default.white("Using manifest: ") + import_picocolors3.default.green(resolvedOptions.manifestPath));
-    },
-    generateBundle() {
-      const manifestSource = JSON.stringify(resolvedOptions.manifest, null, 2);
-      const { name } = import_path12.default.parse(resolvedOptions.manifestPath);
-      this.emitFile({
-        type: "asset",
-        name,
-        fileName: `${name}.json`,
-        originalFileName: resolvedOptions.manifestPath,
-        source: manifestSource
-      });
-    }
-  };
-}
-
-// src/manifest/serve.ts
-var import_fs_extra6 = __toESM(require("fs-extra"));
-var import_path13 = __toESM(require("path"));
-var import_picocolors4 = __toESM(require("picocolors"));
-function serve2(options) {
-  const resolvedOptions = options;
-  let resolvedConfig;
-  let outDir;
-  return {
-    name: "foundryvtt:manifest:serve",
-    apply: "serve",
-    async config(config2, _env) {
-      await resolveOptions(options, config2.root || process.cwd());
-      resolvedOptions.manifest = resolveManifest(resolvedOptions.manifest, config2);
-    },
-    configResolved(config2) {
-      resolvedConfig = config2;
-      const srcDir = resolvedConfig.root;
-      outDir = import_path13.default.resolve(srcDir, resolvedConfig.build.outDir);
-      config2.logger.info(import_picocolors4.default.white("Using manifest: ") + import_picocolors4.default.green(resolvedOptions.manifestPath));
-    },
-    configureServer: async () => {
-      const manifestSource = JSON.stringify(resolvedOptions.manifest, null, 2);
-      const { name } = import_path13.default.parse(resolvedOptions.manifestPath);
-      await import_fs_extra6.default.ensureDir(outDir);
-      await import_fs_extra6.default.writeFile(import_path13.default.resolve(outDir, `${name}.json`), manifestSource);
-    }
-  };
-}
-
-// src/manifest/index.ts
-function manifest(options) {
-  return [build2(options), serve2(options)];
-}
-
 // src/index.ts
 var foundryvtt = async (options = {}) => {
-  return [
-    manifest(options),
-    config(options),
-    entryScripts(options),
-    assets(options)
-  ];
+  if (!options.manifestPath || !await import_fs_extra7.default.exists(options.manifestPath))
+    options.manifestPath = findManifest(process.cwd());
+  const resolvedOptions = await resolveOptions(options);
+  return [manifest(resolvedOptions), config(resolvedOptions), entryScripts(resolvedOptions), assets(resolvedOptions)];
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

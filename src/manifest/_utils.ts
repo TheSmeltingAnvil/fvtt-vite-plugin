@@ -3,8 +3,14 @@ import * as Vite from "vite"
 import { FoundryvttOptions, Manifest, ResolvedAssetsOptions, ResolvedFoundryvttOptions } from "../_types"
 import * as utils from "../_utils"
 
-export async function resolveOptions(options: FoundryvttOptions, root: string): Promise<boolean> {
-  const resolvedOptions = options as ResolvedFoundryvttOptions
+export async function resolveOptions(options: FoundryvttOptions): Promise<ResolvedFoundryvttOptions> {
+  const resolvedOptions = { ...options } as ResolvedFoundryvttOptions
+
+  // Resolve manifest and load it
+  resolvedOptions.manifestType = resolvedOptions.manifestPath.indexOf("/module.") >= 0 ? "module" : "system"
+  resolvedOptions.manifest = await utils.loadFile<Manifest>(resolvedOptions.manifestPath)
+
+  // Resolve assets options
   resolvedOptions.assets = (() => {
     switch (typeof options.assets) {
       case "undefined":
@@ -25,10 +31,6 @@ export async function resolveOptions(options: FoundryvttOptions, root: string): 
   })()
   resolvedOptions.assets = [...resolvedOptions.assets, ...defaultAssetsOptions]
 
-  resolvedOptions.manifestPath = options.manifestPath ?? utils.findManifest(root)
-  resolvedOptions.manifestType = resolvedOptions.manifestPath.indexOf("module.") >= 0 ? "module" : "system"
-  resolvedOptions.manifest = await utils.loadFile<Manifest>(resolvedOptions.manifestPath)
-
   // Set default variables for replacement
   options.variables = options.variables || {}
   options.variables["ID"] = resolvedOptions.manifest.id
@@ -43,7 +45,46 @@ export async function resolveOptions(options: FoundryvttOptions, root: string): 
     return source
   }
 
-  return true
+  // Functions to generate output file names
+  resolvedOptions.scriptFileNames = (name: string) => {
+    return `${name}.mjs`
+  }
+  resolvedOptions.styleFileNames = (name: string) => {
+    return `${name}.css`
+  }
+
+  // Create mapping from original file names to output file names
+  const esmodules = resolvedOptions.manifest.esmodules.reduce(
+    (acc, originalFileName) => {
+      const { dir, name } = path.posix.parse(originalFileName)
+      const name2 = path.posix.join(dir, name)
+      acc[originalFileName] = resolvedOptions.scriptFileNames(name2)
+      return acc
+    },
+    {} as Record<string, string>,
+  )
+  const scripts = resolvedOptions.manifest.scripts.reduce(
+    (acc, originalFileName) => {
+      const { dir, name } = path.posix.parse(originalFileName)
+      const name2 = path.posix.join(dir, name)
+      acc[originalFileName] = resolvedOptions.scriptFileNames(name2)
+      return acc
+    },
+    {} as Record<string, string>,
+  )
+  const styles = resolvedOptions.manifest.styles.reduce(
+    (acc, originalFileName) => {
+      const { dir, name } = path.posix.parse(originalFileName)
+      const name2 = path.posix.join(dir, name)
+      acc[originalFileName] = resolvedOptions.styleFileNames(name2)
+      return acc
+    },
+    {} as Record<string, string>,
+  )
+
+  resolvedOptions.entries = { ...esmodules, ...scripts, ...styles }
+
+  return resolvedOptions
 }
 
 // The Foundry VTT manifest is the source of truth for what files are included in the build.
@@ -156,11 +197,15 @@ function createFunction(
   if (!config) return undefined
 
   if (typeof config === "string") {
-    return (name: string, extname: string) => config.replace("[name]", name).replace("[extname]", extname)
+    return (name: string, extname: string) => {
+      return config.replace("[name]", name).replace("[extname]", extname)
+    }
   }
 
   if (typeof config === "function") {
-    return (name: string, _extname: string) => config({ name } as Vite.Rolldown.PreRenderedChunk)
+    return (name: string, _extname: string) => {
+      return config({ name } as Vite.Rolldown.PreRenderedChunk)
+    }
   }
 
   return undefined

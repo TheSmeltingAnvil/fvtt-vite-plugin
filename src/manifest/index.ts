@@ -1,10 +1,10 @@
 import * as Vite from "vite"
-import { FoundryvttOptions } from "../_types"
+import { ResolvedFoundryvttOptions } from "../_types"
 import build from "./build"
 import serve from "./serve"
 
 // REVIEW add template.yml support here too?
 
-export default function manifest(options: FoundryvttOptions): Vite.Plugin[] {
-  return [build(options), serve(options)]
+export default function manifest(resolvedOptions: ResolvedFoundryvttOptions): Vite.Plugin[] {
+  return [build(resolvedOptions), serve(resolvedOptions)]
 }

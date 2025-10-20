@@ -3,8 +3,7 @@ import * as Vite from "vite"
 import { ResolvedFoundryvttOptions } from "../_types"
 import * as utils from "../_utils"
 
-export default function build(options: ResolvedFoundryvttOptions): Vite.Plugin {
-  const resolvedOptions = options
+export default function build(resolvedOptions: ResolvedFoundryvttOptions): Vite.Plugin {
   let resolvedConfig: Vite.ResolvedConfig
   let srcDir: string
   let outDir: string

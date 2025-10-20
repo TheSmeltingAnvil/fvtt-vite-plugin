@@ -2,12 +2,11 @@ import fs from "fs-extra"
 import path from "path"
 
 export default function walkFiles(
-  pattern: string | string[],
-  { srcDir, exclude }: { srcDir: string; exclude?: string | string[] },
+  pattern: string | readonly string[],
+  { srcDir, exclude }: { srcDir?: string; exclude?: readonly string[] },
 ): string[] {
-  if (!Array.isArray(pattern)) pattern = [pattern]
-  if (!Array.isArray(exclude)) exclude = exclude ? [exclude] : []
   return fs.globSync(pattern, { cwd: srcDir, exclude }).map((match) => {
-    return path.resolve(srcDir, match.replaceAll(/\\/g, "/"))
+    const dir = srcDir?.replaceAll(/\\/g, "/") ?? ""
+    return path.resolve(dir, match)
   })
 }

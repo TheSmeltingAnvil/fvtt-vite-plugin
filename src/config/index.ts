@@ -7,6 +7,9 @@ export default function config(resolvedOptions: ResolvedFoundryvttOptions): Vite
     name: "foundryvtt:config",
 
     config(config: Vite.UserConfig, _env: Vite.ConfigEnv) {
+      // Update root if not set
+      config.root ??= path.dirname(resolvedOptions.manifestPath)
+
       // Update public dir if not set
       config.publicDir ??= "../public"
 
@@ -31,11 +34,13 @@ export default function config(resolvedOptions: ResolvedFoundryvttOptions): Vite
         }
       }
 
-      const input = [...resolvedOptions.manifest.esmodules, ...resolvedOptions.manifest.scripts].reduce(
-        (acc, file) => {
-          const { dir, name } = path.posix.parse(file)
-          const key = path.posix.join(dir, name)
-          acc[key] = key
+      const input = Object.entries(resolvedOptions.entries).reduce(
+        (acc, [originalFileName, fileName]) => {
+          const { dir, name: baseName, ext } = path.posix.parse(fileName)
+          if (ext !== ".css") {
+            const name = path.posix.join(dir, baseName)
+            acc[name] = originalFileName
+          }
           return acc
         },
         {} as Record<string, string>,
@@ -46,13 +51,19 @@ export default function config(resolvedOptions: ResolvedFoundryvttOptions): Vite
         ...input,
       }
 
+      for (const key of Object.keys(resolvedOptions.entries)) {
+        const kv = Object.entries(config.build.rolldownOptions.input).find(([_, value]) => value === key)
+        if (kv) {
+          resolvedOptions.entries[key] = kv[0] + path.extname(resolvedOptions.entries[key])
+        }
+      }
+
       // Update outputs
-      if (config.build.rolldownOptions.output && !Array.isArray(config.build.rolldownOptions.output)) {
+      config.build.rolldownOptions.output ??= []
+      if (!Array.isArray(config.build.rolldownOptions.output)) {
         const original = config.build.rolldownOptions.output
         config.build.rolldownOptions.output = []
         config.build.rolldownOptions.output.push(original)
-      } else {
-        config.build.rolldownOptions.output = []
       }
       config.build.rolldownOptions.output.push({
         format: "esm",
@@ -64,8 +75,12 @@ export default function config(resolvedOptions: ResolvedFoundryvttOptions): Vite
           }
           return "[name][extname]"
         },
-        entryFileNames: "[name].mjs",
-        cssEntryFileNames: "[name].css",
+        entryFileNames: (chunkInfo: Vite.Rolldown.PreRenderedChunk) => {
+          return resolvedOptions.scriptFileNames(chunkInfo.name)
+        },
+        cssEntryFileNames: (chunkInfo: Vite.Rolldown.PreRenderedChunk) => {
+          return resolvedOptions.styleFileNames(chunkInfo.name)
+        },
       })
 
       const prefixUrl = `/${resolvedOptions.manifestType}s/${resolvedOptions.manifest.id}/`

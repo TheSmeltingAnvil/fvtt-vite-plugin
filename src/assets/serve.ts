@@ -7,8 +7,7 @@ import { CollectedFile, ResolvedAssetsOptions, ResolvedFoundryvttOptions } from 
 import * as utils from "../_utils"
 import { serveFiles } from "./_utils"
 
-export default function serve(options: ResolvedFoundryvttOptions): Vite.Plugin {
-  const resolvedOptions = options
+export default function serve(resolvedOptions: ResolvedFoundryvttOptions): Vite.Plugin {
   let resolvedConfig: Vite.ResolvedConfig
   let srcDir: string
   let outDir: string

@@ -30,7 +30,6 @@ export function serveFiles(
         return sendTransform(req, res, source)
       }
 
-      console.log("Serving Static File: ", file)
       sendStatic(req, res, file.originalFileName, file.stats)
     } catch (err: unknown) {
       if (err instanceof Error) return next(err)

@@ -1,23 +1,15 @@
 import path from "path"
 import colors from "picocolors"
 import * as Vite from "vite"
-import { FoundryvttOptions, ResolvedFoundryvttOptions } from "../_types"
-import * as utils from "./_utils"
+import { ResolvedFoundryvttOptions } from "../_types"
 
-export default function build(options: FoundryvttOptions): Vite.Plugin {
-  const resolvedOptions = options as ResolvedFoundryvttOptions
-
+export default function build(resolvedOptions: ResolvedFoundryvttOptions): Vite.Plugin {
   return {
     name: "foundryvtt:manifest:build",
     apply: "build",
 
-    async config(config: Vite.UserConfig, _env: Vite.ConfigEnv) {
-      await utils.resolveOptions(options, config.root || process.cwd())
-      resolvedOptions.manifest = utils.resolveManifest(resolvedOptions.manifest, config)
-    },
-
-    configResolved(config: Vite.ResolvedConfig) {
-      config.logger.info(colors.white("Using manifest: ") + colors.green(resolvedOptions.manifestPath))
+    configResolved(resolvedConfig: Vite.ResolvedConfig) {
+      resolvedConfig.logger.info(colors.white("Using manifest: ") + colors.green(resolvedOptions.manifestPath))
     },
 
     generateBundle() {

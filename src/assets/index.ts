@@ -3,6 +3,6 @@ import { ResolvedFoundryvttOptions } from "../_types"
 import build from "./build"
 import serve from "./serve"
 
-export default function assets(options: ResolvedFoundryvttOptions): Vite.Plugin[] {
-  return [build(options), serve(options)]
+export default function assets(resolvedOptions: ResolvedFoundryvttOptions): Vite.Plugin[] {
+  return [build(resolvedOptions), serve(resolvedOptions)]
 }
