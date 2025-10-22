@@ -3494,9 +3494,9 @@ var require_main = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@foundryvtt+utils@https+++codeload.github.com+TheSmeltingAnvil+fvtt-utils+tar.gz+ad96a9_532cc5638cc7a7b0ad44ea794ed2bba7/node_modules/@foundryvtt/utils/dist/index.js
+// node_modules/.pnpm/@foundryvtt+utils@https+++c_532cc5638cc7a7b0ad44ea794ed2bba7/node_modules/@foundryvtt/utils/dist/index.js
 var require_dist = __commonJS({
-  "node_modules/.pnpm/@foundryvtt+utils@https+++codeload.github.com+TheSmeltingAnvil+fvtt-utils+tar.gz+ad96a9_532cc5638cc7a7b0ad44ea794ed2bba7/node_modules/@foundryvtt/utils/dist/index.js"(exports2, module2) {
+  "node_modules/.pnpm/@foundryvtt+utils@https+++c_532cc5638cc7a7b0ad44ea794ed2bba7/node_modules/@foundryvtt/utils/dist/index.js"(exports2, module2) {
     "use strict";
     var __create2 = Object.create;
     var __defProp2 = Object.defineProperty;
@@ -6612,7 +6612,9 @@ __export(index_exports, {
   foundryvtt: () => foundryvtt
 });
 module.exports = __toCommonJS(index_exports);
+var import_utils2 = __toESM(require_dist());
 var import_fs_extra7 = __toESM(require("fs-extra"));
+var import_path12 = __toESM(require("path"));
 
 // src/assets/build.ts
 var import_path5 = __toESM(require("path"));
@@ -6984,10 +6986,12 @@ var import_path7 = __toESM(require("path"));
 function config(resolvedOptions) {
   return {
     name: "foundryvtt:config",
-    config(config2, _env) {
-      config2.root ??= import_path7.default.dirname(resolvedOptions.manifestPath);
+    async config(config2, _env) {
+      config2.root ??= import_path7.default.dirname(resolvedOptions.manifestInfo.path);
       config2.publicDir ??= "../public";
       config2.build ??= {};
+      config2.build.outDir ??= "../dist";
+      config2.build.assetsDir ??= "";
       config2.build.rolldownOptions ??= {};
       if (config2.build.rolldownOptions.input) {
         if (typeof config2.build.rolldownOptions.input === "string") {
@@ -7009,12 +7013,13 @@ function config(resolvedOptions) {
           const { dir, name: baseName, ext } = import_path7.default.posix.parse(fileName);
           if (ext !== ".css") {
             const name = import_path7.default.posix.join(dir, baseName);
-            acc[name] = originalFileName;
+            acc[name] = "./" + originalFileName;
           }
           return acc;
         },
         {}
       );
+      console.log("[DEBUG] Vite input entries to add: ", input);
       config2.build.rolldownOptions.input = {
         ...config2.build.rolldownOptions.input,
         ...input
@@ -7033,7 +7038,6 @@ function config(resolvedOptions) {
       }
       config2.build.rolldownOptions.output.push({
         format: "esm",
-        preserveModules: true,
         assetFileNames: (chunkInfo) => {
           if (chunkInfo.name) {
             const { dir } = import_path7.default.posix.parse(chunkInfo.originalFileName ?? chunkInfo.name);
@@ -7044,16 +7048,33 @@ function config(resolvedOptions) {
         entryFileNames: (chunkInfo) => {
           return resolvedOptions.scriptFileNames(chunkInfo.name);
         },
+        chunkFileNames: (chunkInfo) => {
+          return resolvedOptions.scriptFileNames(chunkInfo.name);
+        },
         cssEntryFileNames: (chunkInfo) => {
           return resolvedOptions.styleFileNames(chunkInfo.name);
+        },
+        cssChunkFileNames: (chunkInfo) => {
+          return resolvedOptions.styleFileNames(chunkInfo.name);
+        },
+        // REVIEW if entry in manifest is referenced by another module, it gets put in a separate chunk...
+        advancedChunks: {
+          includeDependenciesRecursively: true,
+          groups: [
+            {
+              name: "actors/index",
+              test: "actors/index.ts",
+              priority: 1e3
+            }
+          ]
         }
       });
-      const prefixUrl = `/${resolvedOptions.manifestType}s/${resolvedOptions.manifest.id}/`;
-      config2.base = prefixUrl;
+      const baseUrl = await resolvedOptions.manifestInfo.baseUrl() ?? "";
+      config2.base = baseUrl;
       config2.server ??= {};
       config2.server.port = 30001;
       config2.server.proxy ??= {};
-      config2.server.proxy[`^(?!${prefixUrl})`] = "http://localhost:30000/";
+      config2.server.proxy[`^(?!${baseUrl})`] = "http://localhost:30000/";
       config2.server.proxy["/socket.io"] = {
         target: "ws://localhost:30000",
         ws: true
@@ -7082,7 +7103,6 @@ function entryScripts(resolvedOptions) {
         const output = import_path8.default.resolve(outDir, outputFileName);
         const relativeFileName = import_path8.default.posix.relative(dir, originalFileName);
         if (dir) await import_fs_extra5.default.ensureDir(dir);
-        console.log(`[DEBUG] Creating dev server entry script: ${output}`);
         if (ext === ".css") {
           await import_fs_extra5.default.writeFile(output, `/* ${message} */
 `);
@@ -7180,7 +7200,7 @@ function resolveManifest(manifest2, config2) {
   const resolvedManifest = { ...manifest2 };
   const scriptFileNames = createFunction(config2.build?.rolldownOptions?.output, "entryFileNames") ?? createFunction(config2.build?.rolldownOptions?.output, "chunkFileNames") ?? ((name, extname2) => `${name}${extname2}`);
   const styleFileNames = createFunction(config2.build?.rolldownOptions?.output, "cssEntryFileNames") ?? createFunction(config2.build?.rolldownOptions?.output, "cssChunkFileNames") ?? createFunction(config2.build?.rolldownOptions?.output, "chunkFileNames") ?? ((name, extname2) => `${name}${extname2}`);
-  resolvedManifest.esmodules = manifest2.esmodules.map((fileName) => {
+  resolvedManifest.esmodules = (manifest2.esmodules ?? []).map((fileName) => {
     fileName = useInputName(fileName, config2);
     const { dir, name, ext } = import_path9.default.parse(fileName);
     fileName = import_path9.default.posix.join(dir, scriptFileNames(name, ext));
@@ -7189,7 +7209,7 @@ function resolveManifest(manifest2, config2) {
     }
     return fileName;
   });
-  resolvedManifest.scripts = manifest2.scripts.map((fileName) => {
+  resolvedManifest.scripts = (manifest2.scripts ?? []).map((fileName) => {
     fileName = useInputName(fileName, config2);
     const { dir, name, ext } = import_path9.default.parse(fileName);
     fileName = import_path9.default.posix.join(dir, scriptFileNames(name, ext));
@@ -7198,7 +7218,7 @@ function resolveManifest(manifest2, config2) {
     }
     return fileName;
   });
-  resolvedManifest.styles = manifest2.styles.map((fileName) => {
+  resolvedManifest.styles = (manifest2.styles ?? []).map((fileName) => {
     fileName = useInputName(fileName, config2);
     const { dir, name, ext } = import_path9.default.parse(fileName);
     fileName = import_path9.default.posix.join(dir, styleFileNames(name, ext));
@@ -7213,7 +7233,7 @@ function resolveManifest(manifest2, config2) {
     }
     return fileName;
   });
-  resolvedManifest.languages = manifest2.languages.map((lang) => ({
+  resolvedManifest.languages = (manifest2.languages ?? []).map((lang) => ({
     ...lang,
     path: lang.path.replace(/\.ya?ml$/, ".json")
   }));
@@ -7296,17 +7316,20 @@ var import_path11 = __toESM(require("path"));
 var import_picocolors4 = __toESM(require("picocolors"));
 function serve2(resolvedOptions) {
   let outDir;
+  let manifest2;
   return {
     name: "foundryvtt:manifest:serve",
     apply: "serve",
-    configResolved(resolvedConfig) {
+    async configResolved(resolvedConfig) {
       const srcDir = resolvedConfig.root;
       outDir = import_path11.default.resolve(srcDir, resolvedConfig.build.outDir);
-      resolvedConfig.logger.info(import_picocolors4.default.white("Using manifest: ") + import_picocolors4.default.green(resolvedOptions.manifestPath));
+      resolvedConfig.logger.info(import_picocolors4.default.white("Using manifest: ") + import_picocolors4.default.green(resolvedOptions.manifestInfo.path));
+      manifest2 = resolveManifest(await resolvedOptions.manifestInfo.manifest(), resolvedConfig);
     },
-    configureServer: async () => {
-      const manifestSource = JSON.stringify(resolvedOptions.manifest, null, 2);
-      const { name } = import_path11.default.parse(resolvedOptions.manifestPath);
+    async configureServer() {
+      const manifestPath = resolvedOptions.manifestInfo.path;
+      const manifestSource = JSON.stringify(manifest2, null, 2);
+      const { name } = import_path11.default.parse(manifestPath);
       await import_fs_extra6.default.ensureDir(outDir);
       await import_fs_extra6.default.writeFile(import_path11.default.resolve(outDir, `${name}.json`), manifestSource);
     }
@@ -7319,11 +7342,9 @@ function manifest(resolvedOptions) {
 }
 
 // src/index.ts
-var import_utils3 = __toESM(require_dist());
-var import_path12 = __toESM(require("path"));
 var foundryvtt = async (options = {}) => {
   const rootPath = options.manifestPath ? (await import_fs_extra7.default.stat(options.manifestPath)).isDirectory() ? options.manifestPath : import_path12.default.dirname(options.manifestPath) : process.cwd();
-  const manifestInfo = await (0, import_utils3.findManifest)(rootPath);
+  const manifestInfo = await (0, import_utils2.findManifest)(rootPath);
   if (!manifestInfo) throw new Error("Could not find (system|module).(json|yaml|yml) manifest file.");
   const resolvedOptions = await resolveOptions(options, manifestInfo);
   return [manifest(resolvedOptions), config(resolvedOptions), entryScripts(resolvedOptions), assets(resolvedOptions)];
@@ -7336,7 +7357,7 @@ var foundryvtt = async (options = {}) => {
 
 @foundryvtt/utils/dist/index.js:
   (*! Bundled license information:
-
+  
   js-yaml/dist/js-yaml.mjs:
     (*! js-yaml 4.1.0 https://github.com/nodeca/js-yaml @license MIT *)
   *)

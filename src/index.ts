@@ -1,4 +1,6 @@
+import { findManifest } from "@foundryvtt/utils"
 import fs from "fs-extra"
+import path from "path"
 import * as Vite from "vite"
 import { FoundryvttOptions } from "./_types"
 import assets from "./assets"
@@ -6,8 +8,6 @@ import config from "./config"
 import entryScripts from "./entryScripts"
 import manifest from "./manifest"
 import { resolveOptions } from "./manifest/_utils"
-import { findManifest } from "@foundryvtt/utils"
-import path from "path"
 
 export const foundryvtt = async (options: FoundryvttOptions = {}): Promise<Vite.PluginOption[]> => {
   const rootPath = options.manifestPath

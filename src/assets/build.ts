@@ -28,6 +28,7 @@ export default function build(resolvedOptions: ResolvedFoundryvttOptions): Vite.
           if (copyToOutDir) {
             const fileName = rename?.(relativeFileName) ?? relativeFileName
             const source = replace(await read())
+            ////console.log(`[DEBUG] Emitting asset file: ${outputFileName} -> ${fileName}`)
             this.emitFile({
               type: "asset",
               name: outputFileName,

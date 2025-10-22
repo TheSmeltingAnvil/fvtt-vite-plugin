@@ -1,9 +1,9 @@
+import { Manifest } from "@foundryvtt/utils"
 import path from "path"
 import colors from "picocolors"
 import * as Vite from "vite"
 import { ResolvedFoundryvttOptions } from "../_types"
 import * as utils from "./_utils"
-import { Manifest } from "@foundryvtt/utils"
 
 export default function build(resolvedOptions: ResolvedFoundryvttOptions): Vite.Plugin {
   let manifest: Manifest

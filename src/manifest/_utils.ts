@@ -86,6 +86,7 @@ export async function resolveOptions(
   )
 
   resolvedOptions.entries = { ...esmodules, ...scripts, ...styles }
+  //console.log("[DEBUG] Resolved entries: ", resolvedOptions.entries)
 
   return resolvedOptions
 }
@@ -107,7 +108,7 @@ export function resolveManifest(manifest: Manifest, config: Vite.UserConfig | Vi
     createFunction(config.build?.rolldownOptions?.output, "chunkFileNames") ??
     ((name: string, extname: string) => `${name}${extname}`)
 
-  resolvedManifest.esmodules = manifest.esmodules.map((fileName: string) => {
+  resolvedManifest.esmodules = (manifest.esmodules ?? []).map((fileName: string) => {
     fileName = useInputName(fileName, config)
     const { dir, name, ext } = path.parse(fileName)
     fileName = path.posix.join(dir, scriptFileNames(name, ext))
@@ -116,7 +117,7 @@ export function resolveManifest(manifest: Manifest, config: Vite.UserConfig | Vi
     }
     return fileName
   })
-  resolvedManifest.scripts = manifest.scripts.map((fileName: string) => {
+  resolvedManifest.scripts = (manifest.scripts ?? []).map((fileName: string) => {
     fileName = useInputName(fileName, config)
     const { dir, name, ext } = path.parse(fileName)
     fileName = path.posix.join(dir, scriptFileNames(name, ext))
@@ -125,7 +126,7 @@ export function resolveManifest(manifest: Manifest, config: Vite.UserConfig | Vi
     }
     return fileName
   })
-  resolvedManifest.styles = manifest.styles.map((fileName: string) => {
+  resolvedManifest.styles = (manifest.styles ?? []).map((fileName: string) => {
     fileName = useInputName(fileName, config)
     const { dir, name, ext } = path.parse(fileName)
     fileName = path.posix.join(dir, styleFileNames(name, ext))
@@ -140,7 +141,7 @@ export function resolveManifest(manifest: Manifest, config: Vite.UserConfig | Vi
     }
     return fileName
   })
-  resolvedManifest.languages = manifest.languages.map((lang) => ({
+  resolvedManifest.languages = (manifest.languages ?? []).map((lang) => ({
     ...lang,
     path: lang.path.replace(/\.ya?ml$/, ".json"),
   }))
