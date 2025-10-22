@@ -1,14 +1,17 @@
 import path from "path"
 import * as Vite from "vite"
-import { FoundryvttOptions, Manifest, ResolvedAssetsOptions, ResolvedFoundryvttOptions } from "../_types"
-import * as utils from "../_utils"
+import { FoundryvttOptions, ResolvedAssetsOptions, ResolvedFoundryvttOptions } from "../_types"
+import { Manifest, ManifestInfo } from "@foundryvtt/utils"
 
-export async function resolveOptions(options: FoundryvttOptions): Promise<ResolvedFoundryvttOptions> {
+export async function resolveOptions(
+  options: FoundryvttOptions,
+  manifestInfo: ManifestInfo,
+): Promise<ResolvedFoundryvttOptions> {
   const resolvedOptions = { ...options } as ResolvedFoundryvttOptions
 
   // Resolve manifest and load it
-  resolvedOptions.manifestType = resolvedOptions.manifestPath.indexOf("/module.") >= 0 ? "module" : "system"
-  resolvedOptions.manifest = await utils.loadFile<Manifest>(resolvedOptions.manifestPath)
+  resolvedOptions.manifestInfo = manifestInfo
+  const manifest = await manifestInfo.manifest()
 
   // Resolve assets options
   resolvedOptions.assets = (() => {
@@ -33,9 +36,9 @@ export async function resolveOptions(options: FoundryvttOptions): Promise<Resolv
 
   // Set default variables for replacement
   options.variables = options.variables || {}
-  options.variables["ID"] = resolvedOptions.manifest.id
-  options.variables["VERSION"] = resolvedOptions.manifest.version
-  options.variables["TITLE"] = resolvedOptions.manifest.title
+  options.variables["ID"] = manifest!.id
+  options.variables["VERSION"] = manifest!.version
+  options.variables["TITLE"] = manifest!.title
   const variables = options.variables
   delete options.variables
   resolvedOptions.replace = (source: string) => {
@@ -54,7 +57,7 @@ export async function resolveOptions(options: FoundryvttOptions): Promise<Resolv
   }
 
   // Create mapping from original file names to output file names
-  const esmodules = (resolvedOptions.manifest.esmodules ?? []).reduce(
+  const esmodules = (manifest.esmodules ?? []).reduce(
     (acc, originalFileName) => {
       const { dir, name } = path.posix.parse(originalFileName)
       const name2 = path.posix.join(dir, name)
@@ -63,7 +66,7 @@ export async function resolveOptions(options: FoundryvttOptions): Promise<Resolv
     },
     {} as Record<string, string>,
   )
-  const scripts = (resolvedOptions.manifest.scripts ?? []).reduce(
+  const scripts = (manifest.scripts ?? []).reduce(
     (acc, originalFileName) => {
       const { dir, name } = path.posix.parse(originalFileName)
       const name2 = path.posix.join(dir, name)
@@ -72,7 +75,7 @@ export async function resolveOptions(options: FoundryvttOptions): Promise<Resolv
     },
     {} as Record<string, string>,
   )
-  const styles = (resolvedOptions.manifest.styles ?? []).reduce(
+  const styles = (manifest.styles ?? []).reduce(
     (acc, originalFileName) => {
       const { dir, name } = path.posix.parse(originalFileName)
       const name2 = path.posix.join(dir, name)

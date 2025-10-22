@@ -1,3 +1,5 @@
+import { ManifestInfo } from "@foundryvtt/utils"
+
 export interface FoundryvttOptions {
   assets?: AssetsOptions | AssetsOptions[]
   manifestPath?: string
@@ -14,17 +16,6 @@ export interface AssetsOptions {
   serve?: boolean
 }
 
-export interface Manifest {
-  id: string
-  title: string
-  description: string
-  version: string
-  esmodules: string[]
-  scripts: string[]
-  styles: string[]
-  languages: { lang: string; name: string; path: string }[]
-}
-
 export interface ResolvedAssetsOptions {
   assetType: "template" | "language" | ""
   copyToOutDir: boolean
@@ -35,11 +26,9 @@ export interface ResolvedAssetsOptions {
   serve: boolean
 }
 
-export type ResolvedFoundryvttOptions = Required<Omit<FoundryvttOptions, "assets" | "variables">> & {
+export type ResolvedFoundryvttOptions = Required<Omit<FoundryvttOptions, "assets" | "manifestPath" | "variables">> & {
   assets: ResolvedAssetsOptions[]
-  manifest: Manifest
-  manifestPath: string
-  manifestType: "module" | "system"
+  manifestInfo: ManifestInfo
   replace: (source: string) => string
   scriptFileNames: (name: string) => string
   styleFileNames: (name: string) => string
